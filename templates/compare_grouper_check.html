@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Code Compare Grouper Check</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            line-height: 1.6;
+            background-color: #f7f7f7;
+            color: #333;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            font-weight: 500;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 0.5rem;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            margin: 1rem 0;
+        }
+
+        a, input[type="submit"], .file-input-label {
+            display: inline-block;
+            text-decoration: none;
+            color: #34495e;
+            padding: 0.8rem 1.2rem;
+            background-color: white;
+            border-radius: 6px;
+            border: 1px solid #e1e1e1;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            font-size: inherit;
+            cursor: pointer;
+        }
+
+        a:hover, input[type="submit"]:hover, .file-input-label:hover {
+            background-color: #f8f9fa;
+            border-color: #d1d1d1;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* Hide the actual file input but make the label clickable */
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-input-wrapper {
+            margin-bottom: 1rem;
+            margin-top: 1rem; /* Add spacing between "Choose File" and other buttons */
+        }
+
+        .file-input-wrapper:hover {
+            background-color: #f8f9fa;
+        }
+
+        form {
+            margin-bottom: 2rem;
+        }
+
+        /* Additional style for the error message */
+        .error-message {
+            color: red;
+            margin-bottom: 1rem;
+        }
+        
+        /* Align input and submit buttons evenly */
+        .submit-wrapper, .file-input-wrapper {
+            margin-bottom: 1.5rem;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Code Compare Grouper Check</h1>
+
+    <!-- Instructions for the user -->
+    <p class="instructions">
+        Please upload your Excel file to perform the Grouper Check. You can download a template below if needed.<br>
+        Formatting:<br>
+        Concepts Tab - add concept names from the more recent release sorted alphabetically.<br>
+        Relationships tab - add concept names from Concept 2 column sorted alphabetically.<br>
+        Note - please do not apply any formatting or links<br>
+    </p>
+
+    <!-- Display error messages -->
+    {% if error %}
+        <div class="error-message">
+            <p>{{ error }}</p>
+        </div>
+    {% endif %}
+
+    <!-- Download Template Link -->
+    <div class="download-template">
+        <a href="{{ url_for('compare_grouper_check') }}?download_template=true">Download Template</a>
+    </div>
+
+    <!-- File Upload Form -->
+    <form action="" method="post" enctype="multipart/form-data">
+        <div class="file-input-wrapper">
+            <!-- The label will be styled and used as the button to click for file selection -->
+            <label for="file-input" class="file-input-label" id="file-label">Choose Excel File</label>
+            <input type="file" name="file" id="file-input" accept=".xlsx" required>
+        </div>
+        <script>
+            // Add JavaScript to show selected filename
+            document.getElementById('file-input').addEventListener('change', function() {
+                const fileName = this.files[0]?.name || 'Choose Excel File';
+                document.getElementById('file-label').textContent = fileName;
+            });
+        </script>
+        <div class="submit-wrapper">
+            <input type="submit" value="Upload and Process">
+        </div>
+    </form>
+
+    <a href="{{ url_for('home') }}">Back to Home</a>
+</body>
+</html>
