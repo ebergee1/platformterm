@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Web Hub</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            line-height: 1.6;
+            background-color: #f7f7f7;
+            color: #333;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            font-weight: 500;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 0.5rem;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            margin: 1rem 0;
+        }
+
+        a {
+            display: inline-block;
+            text-decoration: none;
+            color: #34495e;
+            padding: 0.8rem 1.2rem;
+            background-color: white;
+            border-radius: 6px;
+            border: 1px solid #e1e1e1;
+            transition: all 0.2s ease;
+        }
+
+        a:hover {
+            background-color: #f8f9fa;
+            border-color: #d1d1d1;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body>
+    <h1>Select Functionality</h1>
+    <ul>
+        <li><a href="{{ url_for('alias_converter') }}">Alias Converter</a></li>
+        <li><a href="{{ url_for('compare_dropped_duplicates') }}">Code Compare - Dropped and Duplicates Report</a></li>
+        <li><a href="{{ url_for('compare_grouper_check') }}">Code Compare - Grouper Check</a></li>
+        <li><a href="{{ url_for('non_exclusive_personalized') }}">Non-Exclusive - Personalized</a></li>
+    </ul>
+</body>
+</html>
