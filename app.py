@@ -17,8 +17,8 @@ import pymedtermino
 # Set the DATA_DIR for pymedtermino
 pymedtermino.DATA_DIR = "/home/opc"
 
-# Corrected: Remove the .sqlite3 extension
-pymedtermino.connect_sqlite3("/home/opc/snomedct")
+# Corrected: Remove the .sqlite3 extension and store the connection
+db = pymedtermino.connect_sqlite3("/home/opc/snomedct")
 
 # Now import SNOMEDCT after setting DATA_DIR and connecting
 from pymedtermino.snomedct import SNOMEDCT
@@ -35,8 +35,8 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['PROCESSED_FOLDER'] = PROCESSED_FOLDER
 
 # Ensure the upload and processed directories exist
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(PROCESSED_FOLDER, exist_ok=True)
+os.makedirs('uploads', exist_ok=True)
+os.makedirs('processed_files', exist_ok=True)
 
 # Helper function to check file extension
 def allowed_file(filename):
@@ -54,8 +54,8 @@ print("Loading SNOMED CT terms...")
 snomed_words = set()
 
 def get_snomed_words():
-    # Use the existing database connection via SNOMEDCT
-    cursor = SNOMEDCT.db.cursor()
+    # Use the existing database connection
+    cursor = db.cursor()
     
     # Query the active descriptions from the database
     cursor.execute("SELECT term FROM Descriptions WHERE active=1")
@@ -68,6 +68,9 @@ def get_snomed_words():
         if term[0]:
             words.update(re.findall(r'\b\w+\b', term[0].lower()))
     return words
+
+snomed_words = get_snomed_words()
+print(f"Loaded {len(snomed_words)} unique words from SNOMED CT")
 
 snomed_words = get_snomed_words()
 print(f"Loaded {len(snomed_words)} unique words from SNOMED CT")
