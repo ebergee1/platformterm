@@ -1,15 +1,26 @@
-from flask import Flask, render_template, request, send_file, redirect, url_for, session
-import os
-import pandas as pd
-from openpyxl import load_workbook
-from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
-from werkzeug.utils import secure_filename
 import os
 import re
 import json
 import sqlite3
+
+# Third-Party Library Imports
+from flask import Flask, render_template, request, send_file, redirect, url_for, session
+import pandas as pd
+from openpyxl import load_workbook
+from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
+from werkzeug.utils import secure_filename
 from rapidfuzz import process, fuzz
+
+# Set up pymedtermino before importing SNOMEDCT
 import pymedtermino
+
+# Set the DATA_DIR for pymedtermino
+pymedtermino.DATA_DIR = "/home/opc"
+
+# Force pymedtermino to connect to the SQLite database manually
+pymedtermino.connect_sqlite3("/home/opc/snomedct.sqlite3")
+
+# Now import SNOMEDCT after setting DATA_DIR and connecting
 from pymedtermino.snomedct import SNOMEDCT
 
 app = Flask(__name__)
@@ -37,37 +48,29 @@ def home():
     return render_template('home.html')
 
 CUSTOM_DICT_FILE = "custom_dictionary.json"
-import os
-
-pymedtermino.DATA_DIR = "/home/opc"
-
-# Force pymedtermino to connect to the SQLite database manually
-pymedtermino.connect_sqlite3("/home/opc/snomedct.sqlite3")
-
-# Import SNOMEDCT after setting up the connection
-from pymedtermino.snomedct import SNOMEDCT
-
-# Use environment variable or default to server path for other configurations if needed
-DB_PATH = os.getenv("DB_PATH", "/home/opc/snomedct.sqlite3")
 
 # Load SNOMED words once at startup
 print("Loading SNOMED CT terms...")
 snomed_words = set()
 
-def get_snomed_words(db_path):
-    conn = sqlite3.connect(db_path)
+def get_snomed_words():
+    # Ensure that pymedtermino has connected to the correct SQLite database
+    conn = pymedtermino.connect_sqlite3("snomedct")
     cursor = conn.cursor()
+    
+    # Query the active descriptions from the database
     cursor.execute("SELECT term FROM Descriptions WHERE active=1")
     snomed_terms = cursor.fetchall()
     conn.close()
     
+    # Extract words and convert them to a set
     words = set()
     for term in snomed_terms:
         if term[0]:
             words.update(re.findall(r'\b\w+\b', term[0].lower()))
     return words
 
-snomed_words = get_snomed_words(DB_PATH)
+snomed_words = get_snomed_words()
 print(f"Loaded {len(snomed_words)} unique words from SNOMED CT")
 
 # Utility functions (from your script, adjusted for web context)
