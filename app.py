@@ -39,10 +39,12 @@ def home():
 CUSTOM_DICT_FILE = "custom_dictionary.json"
 import os
 
-# Set the environment variable for pymedtermino
 pymedtermino.DATA_DIR = "/home/opc"
 
-# Import SNOMEDCT after setting DATA_DIR
+# Force pymedtermino to connect to the SQLite database manually
+pymedtermino.connect_sqlite3("/home/opc/snomedct.sqlite3")
+
+# Import SNOMEDCT after setting up the connection
 from pymedtermino.snomedct import SNOMEDCT
 
 # Use environment variable or default to server path for other configurations if needed
