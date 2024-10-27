@@ -39,7 +39,7 @@ MarkupSafe
 matplotlib
 multidict
 networkx
-numpy==1.23.5
+numpy>=1.19.5,<2.0.0
 oci
 openai
 openpyxl
