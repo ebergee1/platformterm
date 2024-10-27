@@ -37,9 +37,12 @@ def home():
     return render_template('home.html')
 
 CUSTOM_DICT_FILE = "custom_dictionary.json"
-DB_PATH = r"C:/Users/EB1801445/OneDrive - Oracle Corporation/Documents/snomedct.sqlite3"
+import os
 
-pymedtermino.DATA_DIR = "."
+# Use environment variable or default to local path
+DB_PATH = os.getenv("DB_PATH", r"C:/Users/EB1801445/OneDrive - Oracle Corporation/Documents/snomedct.sqlite3")
+
+pymedtermino.DATA_DIR = "/home/opc"
 
 # Load SNOMED words once at startup
 print("Loading SNOMED CT terms...")
