@@ -40,14 +40,13 @@ CUSTOM_DICT_FILE = "custom_dictionary.json"
 import os
 
 # Set the environment variable for pymedtermino
-os.environ["pymedtermino_DATA_DIR"] = "/home/opc"
+pymedtermino.DATA_DIR = "/home/opc"
 
-# Now import pymedtermino
+# Import SNOMEDCT after setting DATA_DIR
 from pymedtermino.snomedct import SNOMEDCT
 
-# Use environment variable or default to server path
+# Use environment variable or default to server path for other configurations if needed
 DB_PATH = os.getenv("DB_PATH", "/home/opc/snomedct.sqlite3")
-
 
 # Load SNOMED words once at startup
 print("Loading SNOMED CT terms...")
