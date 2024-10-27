@@ -39,7 +39,7 @@ MarkupSafe
 matplotlib
 multidict
 networkx
-numpy
+numpy==1.23.5
 oci
 openai
 openpyxl
@@ -64,9 +64,9 @@ scikit-learn
 scipy
 six
 sniffio
-spacy
+spacy==3.5.2
 starlette
-thinc
+thinc==8.1.10
 tqdm
 transformers
 typer
