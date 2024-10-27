@@ -18,7 +18,7 @@ import pymedtermino
 pymedtermino.DATA_DIR = "/home/opc"
 
 # Force pymedtermino to connect to the SQLite database manually
-pymedtermino.connect_sqlite3("/home/opc/snomedct.sqlite3")
+pymedtermino.connect_sqlite3("/home/opc/snomedct")
 
 # Now import SNOMEDCT after setting DATA_DIR and connecting
 from pymedtermino.snomedct import SNOMEDCT
@@ -54,14 +54,13 @@ print("Loading SNOMED CT terms...")
 snomed_words = set()
 
 def get_snomed_words():
-    # Ensure that pymedtermino has connected to the correct SQLite database
-    conn = pymedtermino.connect_sqlite3("snomedct")
-    cursor = conn.cursor()
+    # Use the existing database connection
+    cursor = pymedtermino.db.cursor()
     
     # Query the active descriptions from the database
     cursor.execute("SELECT term FROM Descriptions WHERE active=1")
     snomed_terms = cursor.fetchall()
-    conn.close()
+    cursor.close()
     
     # Extract words and convert them to a set
     words = set()
@@ -69,6 +68,9 @@ def get_snomed_words():
         if term[0]:
             words.update(re.findall(r'\b\w+\b', term[0].lower()))
     return words
+
+snomed_words = get_snomed_words()
+print(f"Loaded {len(snomed_words)} unique words from SNOMED CT")
 
 snomed_words = get_snomed_words()
 print(f"Loaded {len(snomed_words)} unique words from SNOMED CT")
