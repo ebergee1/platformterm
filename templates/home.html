@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminology Tools Hub</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='toolbox-favicon.svg') }}">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --background: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --hover-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .subtitle {
+            color: var(--text-light);
+            font-size: 1.1rem;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        /* Styles for the clickable card */
+        .tool-card {
+            background: var(--card-bg);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            color: inherit; /* Ensures text inherits color */
+            text-decoration: none; /* Removes underline */
+        }
+
+        .tool-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--hover-shadow);
+            border-color: var(--primary);
+        }
+
+        .tool-card h3 {
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            font-size: 1.25rem;
+        }
+
+        .tool-card p {
+            color: var(--text-light);
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+            flex-grow: 1;
+        }
+
+        .meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.75rem;
+            color: var(--text-light);
+            margin-top: auto;
+        }
+
+        .badge {
+            background: #e0e7ff;
+            color: var(--primary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .search-bar {
+            max-width: 600px;
+            margin: 0 auto 2rem;
+            position: relative;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-bar input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 4rem;
+            padding: 2rem;
+            color: var(--text-light);
+            font-size: 0.875rem;
+        }
+    </style>
+        <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                const searchInput = document.querySelector('.search-bar input');
+                const toolCards = document.querySelectorAll('.tool-card');
+
+                function resetSearch() {
+                    toolCards.forEach(card => {
+                        card.style.removeProperty('display');
+                        card.style.removeProperty('opacity');
+                    });
+                }
+
+                searchInput.addEventListener('input', function(e) {
+                    const searchTerm = e.target.value.toLowerCase().trim();
+                    
+                    // If search is empty, reset all cards
+                    if (!searchTerm) {
+                        resetSearch();
+                        return;
+                    }
+
+                    toolCards.forEach(card => {
+                        const title = card.querySelector('h3').textContent.toLowerCase();
+                        const description = card.querySelector('p').textContent.toLowerCase();
+                        const badge = card.querySelector('.badge').textContent.toLowerCase();
+
+                        const matches = title.includes(searchTerm) || 
+                                    description.includes(searchTerm) || 
+                                    badge.includes(searchTerm);
+
+                        card.style.display = matches ? 'flex' : 'none';
+                    });
+                });
+
+                // Clear search when 'Escape' is pressed
+                searchInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        this.value = '';
+                        resetSearch();
+                    }
+                });
+            });
+        </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Terminology Tools Hub</h1>
+            <p class="subtitle">Streamlining clinical terminology workflows</p>
+        </header>
+
+        <div class="search-bar">
+            <input type="text" placeholder="Search tools...">
+        </div>
+
+        <div class="tools-grid">
+            <a href="{{ url_for('alias_converter') }}" class="tool-card">
+                <h3>Alias Converter</h3>
+                <p>Generate concept aliases from concept names.</p>
+                <div class="meta">
+                    <span class="badge">Ontology</span>
+                    <span>Runtime: Immediate</span>
+                </div>
+            </a>
+
+            <a href="{{ url_for('compare_dropped_duplicates') }}" class="tool-card">
+                <h3>Dropped and Duplicates Report</h3>
+                <p>Generate a report of all codes dropped, duplicated, and added to concepts in any given release of a context.</p>
+                <div class="meta">
+                    <span class="badge">Code Compare</span>
+                    <span>Runtime: ~1 minute</span>
+                </div>
+            </a>
+
+            <a href="{{ url_for('compare_grouper_check') }}" class="tool-card">
+                <h3>Grouper Check</h3>
+                <p>A report that summarizes codes potentially missing from groupers or added to multiple.</p>
+                <div class="meta">
+                    <span class="badge">Code Compare</span>
+                    <span>Runtime: ~1 minute</span>
+                </div>
+            </a>
+
+            <a href="{{ url_for('non_exclusive_personalized') }}" class="tool-card">
+                <h3>Non-Exclusive - Personalized</h3>
+                <p>A non-exclusive report that contains only given concepts.</p>
+                <div class="meta">
+                    <span class="badge">Enhancements</span>
+                    <span>Runtime: ~2 minutes</span>
+                </div>
+            </a>
+            <a href="{{ url_for('snomed_spell_checker') }}" class="tool-card">
+                <h3>Concept Name Spell Checker</h3>
+                <p>Spell-check concept names in a context.</p>
+                <div class="meta">
+                    <span class="badge">Code Compare</span>
+                    <span>Runtime: ~2 minutes</span>
+                </div>
+            </a>
+            <a href="{{ url_for('concept_summary') }}" class="tool-card">
+            <h3>Concept Summary</h3>
+            <p>Summarize code additions, removals, and movements between concepts.</p>
+            <div class="meta">
+                <span class="badge">AI Tools</span>
+                <span>Runtime: Varies</span>
+            </div>
+        </a>
+        </div>
+
+        <footer>
+            <!--<p>© 2024 Terminology Tools Hub. All rights reserved.</p>-->
+        </footer>
+    </div>
+</body>
+</html>
