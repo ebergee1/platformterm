@@ -2,165 +2,321 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Concept Summary</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='toolbox-favicon.svg') }}">
+    <title>Concept Summaries</title>
     <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text: #334155;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --error: #ef4444;
+            --error-bg: #fee2e2;
+            --success: #22c55e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 2rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
             line-height: 1.6;
-            background-color: #f7f7f7;
-            color: #333;
+        }
+
+        .container {
+            max-width: 640px;
+            margin: 3rem auto;
+            padding: 0 1.5rem;
         }
 
         h1 {
-            color: #2c3e50;
-            font-size: 2.5rem;
-            font-weight: 500;
+            font-size: 1.875rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.07);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .error-message {
+            color: var(--error);
+            background: var(--error-bg);
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.875rem;
+        }
+
+        .checkbox-group {
             margin-bottom: 2rem;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 0.5rem;
+            display: grid;
+            gap: 0.75rem;
         }
 
-        a, input[type="submit"], .file-input-label {
-            display: inline-block;
-            text-decoration: none;
-            color: #34495e;
-            padding: 0.8rem 1.2rem;
-            background-color: white;
-            border-radius: 6px;
-            border: 1px solid #e1e1e1;
-            transition: all 0.2s ease;
-            font-family: inherit;
-            font-size: inherit;
+        .checkbox-label {
+            display: flex;
+            padding: 0.75rem;
+            background: var(--background);
+            border-radius: 0.5rem;
             cursor: pointer;
+            transition: background-color 0.2s;
         }
 
-        a:hover, input[type="submit"]:hover, .file-input-label:hover {
-            background-color: #f8f9fa;
-            border-color: #d1d1d1;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        .checkbox-label:hover {
+            background: var(--border);
+        }
+
+        .checkbox-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .checkbox-title {
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 0.25rem;
+        }
+
+        .checkbox-description {
+            font-size: 0.875rem;
+            color: var(--text-light);
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            margin-right: 0.75rem;
+            width: 1.125rem;
+            height: 1.125rem;
+            margin-top: 0.25rem;
+        }
+
+        .file-section {
+            margin-bottom: 2rem;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 1rem;
+            background: var(--background);
+            border: 2px dashed var(--border);
+            border-radius: 0.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .file-input-label:hover {
+            border-color: var(--primary);
+            background: #f0f9ff;
         }
 
         input[type="file"] {
             display: none;
         }
 
-        .file-input-wrapper {
-            margin-top: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        form {
-            margin-bottom: 1rem;
-        }
-
-        .error-message {
-            color: red;
-            margin-bottom: 1rem;
-        }
-        
-        .submit-wrapper {
-            margin-bottom: 1rem;
-        }
-
-        /* Checkbox styling */
-        label {
-            display: block;
-            margin: 0.5rem 0;
+        .button {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 500;
             cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            text-align: center;
         }
 
-        input[type="checkbox"] {
-            margin-right: 0.5rem;
+        .button:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
         }
 
-        /* Progress bar styling */
+        .button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .button.secondary {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .button.secondary:hover {
+            background: #f0f9ff;
+        }
+
+        .buttons-container {
+            display: flex;
+            gap: 1rem;
+            justify-content: space-between;
+            margin-top: 1.5rem;
+        }
+
         #progress-container {
-            margin-top: 1rem;
-            margin-bottom: 1rem;
+            display: none;
+            margin-top: 1.5rem;
         }
 
-        progress {
-            width: 100%;
-            height: 20px;
-            margin-top: 0.5rem;
+        .progress {
+            height: 0.5rem;
+            background: var(--background);
+            border-radius: 999px;
+            overflow: hidden;
+            margin-bottom: 0.75rem;
         }
 
-        /* Checkbox container */
-        .checkbox-group {
-            margin-bottom: 1rem;
+        .progress-bar {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 999px;
+            transition: width 0.3s ease;
+        }
+
+        #progress-message {
+            font-size: 0.875rem;
+            color: var(--text-light);
+            text-align: center;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                margin: 1.5rem auto;
+            }
+            
+            .card {
+                padding: 1.5rem;
+            }
+
+            .buttons-container {
+                flex-direction: column;
+            }
+
+            .button {
+                width: 100%;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Concept Summary</h1>
+    <div class="container">
+        <h1>Concept Summaries</h1>
 
-    {% if error %}
-        <div class="error-message">
-            <p>{{ error }}</p>
+        {% if error %}
+            <div class="error-message">
+                <p>{{ error }}</p>
+            </div>
+        {% endif %}
+
+        <div class="card">
+            <form action="{{ url_for('concept_summary') }}" method="post" enctype="multipart/form-data" id="upload-form">
+                <div class="checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="options" value="additions">
+                        <div class="checkbox-content">
+                            <div class="checkbox-title">Code Additions</div>
+                            <div class="checkbox-description">Summarizes new codes that have been added to concepts</div>
+                        </div>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="options" value="removals">
+                        <div class="checkbox-content">
+                            <div class="checkbox-title">Code Removals</div>
+                            <div class="checkbox-description">Summarizes codes that have been removed from concepts</div>
+                        </div>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="options" value="relocations">
+                        <div class="checkbox-content">
+                            <div class="checkbox-title">Code Relocations</div>
+                            <div class="checkbox-description">Tracks where codes were added to if they were removed from a concept</div>
+                            <div class="checkbox-description">Note - Needs to be run in conjunction with Code Removals</div>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="file-section">
+                    <label class="file-input-label" for="file-input" id="file-label">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto 0.5rem;">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        <div>Choose Excel File</div>
+                    </label>
+                    <input type="file" name="file" id="file-input" accept=".xlsx" required>
+                </div>
+
+                <div class="buttons-container">
+                    <a href="{{ url_for('home') }}" class="button secondary">Back to Home</a>
+                    <input type="submit" value="Upload and Process" id="submit-btn" class="button">
+                </div>
+
+                <div id="progress-container">
+                    <div class="progress">
+                        <div class="progress-bar" style="width: 0%"></div>
+                    </div>
+                    <div id="progress-message">Starting process...</div>
+                </div>
+            </form>
         </div>
-    {% endif %}
-
-    <form action="/concept_summary" method="post" enctype="multipart/form-data">
-        <!-- Checkbox group -->
-        <div class="checkbox-group">
-            <label>
-                <input type="checkbox" name="options" value="additions">
-                Code Additions
-            </label>
-            <label>
-                <input type="checkbox" name="options" value="removals">
-                Code Removals
-            </label>
-        </div>
-
-        <!-- File input -->
-        <div class="file-input-wrapper">
-            <label for="file-input" class="file-input-label" id="file-label">Choose Excel File</label>
-            <input type="file" name="file" id="file-input" accept=".xlsx" required>
-        </div>
-
-        <!-- Submit button -->
-        <div class="submit-wrapper">
-            <input type="submit" value="Upload and Process">
-        </div>
-    </form>
-
-    <!-- Progress bar (if needed) -->
-    <div id="progress-container" style="display:none;">
-        <p>Processing...</p>
-        <progress id="progress-bar" value="0" max="100"></progress>
     </div>
 
-    <a href="{{ url_for('home') }}">Back to Home</a>
-
     <script>
-        // Update file input label on file selection
         document.getElementById('file-input').addEventListener('change', function() {
             const fileName = this.files[0]?.name || 'Choose Excel File';
-            document.getElementById('file-label').textContent = fileName;
+            document.getElementById('file-label').querySelector('div').textContent = fileName;
         });
 
-        // Optional: Handle progress bar display
-        const form = document.querySelector('form');
-        const progressContainer = document.getElementById('progress-container');
-        const progressBar = document.getElementById('progress-bar');
-
-        form.addEventListener('submit', function() {
+        document.getElementById('upload-form').onsubmit = function() {
+            const progressContainer = document.getElementById('progress-container');
+            const submitBtn = document.getElementById('submit-btn');
+            const progressBar = document.querySelector('.progress-bar');
+            const progressMessage = document.getElementById('progress-message');
+            
             progressContainer.style.display = 'block';
-            let progress = 0;
-            const interval = setInterval(() => {
-                if (progress < 90) {
-                    progress += 10;
-                    progressBar.value = progress;
-                } else {
-                    clearInterval(interval);
+            submitBtn.disabled = true;
+            
+            const eventSource = new EventSource('/progress');
+            
+            eventSource.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                progressBar.style.width = data.progress + '%';
+                progressMessage.textContent = data.message;
+                
+                if (data.progress >= 100) {
+                    eventSource.close();
+                    submitBtn.disabled = false;
                 }
-            }, 1000);
-        });
+            };
+            
+            eventSource.onerror = function() {
+                eventSource.close();
+                progressMessage.textContent = 'Error occurred during processing';
+                submitBtn.disabled = false;
+            };
+            
+            return true;
+        };
     </script>
 </body>
 </html>
