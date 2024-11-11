@@ -1,7 +1,7 @@
 # config.py
 
 # Path to OCI config file
-OCI_CONFIG_PATH = "C:/Users/EB1801445/.oci/config"  # Replace with actual path
+OCI_CONFIG_PATH = "/home/opc/.oci/config"  # Replace with actual path
 
 # OCI config profile
 OCI_CONFIG_PROFILE = "DEFAULT"
