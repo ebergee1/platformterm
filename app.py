@@ -2955,7 +2955,11 @@ Cluster Name (2-5 words):
     )
 
     try:
-        response = await asyncio.to_thread(generative_ai_inference_client_embed.chat, chat_detail)
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None,
+            functools.partial(generative_ai_inference_client_embed.chat, chat_detail)
+        )
         response_json = json.loads(str(response.data))
         generated_text = response_json.get('chat_response', {}).get('text', '').strip()
         if not generated_text:
