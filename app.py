@@ -37,6 +37,7 @@ import oci
 from oci.generative_ai_inference import GenerativeAiInferenceClient
 from oci.generative_ai_inference.models import ChatDetails, CohereChatRequest, OnDemandServingMode
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+import functools
 from functools import wraps
 from pathlib import Path
 import io
