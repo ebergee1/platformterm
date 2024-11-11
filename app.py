@@ -42,6 +42,7 @@ from pathlib import Path
 import io
 from io import BytesIO
 import plotly.io as pio
+from datetime import datetime
 
 from config import OCI_CONFIG_PATH, OCI_CONFIG_PROFILE, GENERATIVE_AI_MODEL_ID, SERVICE_ENDPOINT, NAMESPACE, BUCKET_NAME, COMPARTMENT_NAME
 
@@ -102,7 +103,15 @@ batch_size = 15
 
 semaphore = threading.Semaphore(10)
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+log_filename = f'logs/embedding_process_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(log_filename, encoding='utf-8'),
+        logging.StreamHandler()  # This will show logs in git bash/console
+    ]
+)
 
 app = Flask(__name__)
 app.secret_key = 'alsdkfja2342342adflkadjf' 
