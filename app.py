@@ -2956,10 +2956,13 @@ Cluster Name (2-5 words):
     )
 
     try:
+        # Create a dedicated thread pool executor
+        executor = ThreadPoolExecutor(max_workers=3)  # Adjust number as needed
+        
         loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(
-            None,
-            functools.partial(generative_ai_inference_client_embed.chat, chat_detail)
+            executor,
+            lambda: generative_ai_inference_client_embed.chat(chat_detail)
         )
         response_json = json.loads(str(response.data))
         generated_text = response_json.get('chat_response', {}).get('text', '').strip()
@@ -2969,6 +2972,8 @@ Cluster Name (2-5 words):
     except Exception as e:
         logging.error(f"Error generating cluster name: {e}")
         return cluster_id, f"Cluster {cluster_id}"
+    finally:
+        executor.shutdown(wait=False)
 
 def create_concept_template_embed(output_path='concept_dictionary.xlsx'):
     """
