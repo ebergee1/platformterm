@@ -75,7 +75,7 @@ nltk.download('wordnet')
 stop_words = set(stopwords.words('english'))
 lemmatizer = WordNetLemmatizer()
 
-config_path = 'config_path = "/home/opc/.oci/config'
+config_path = '/home/opc/.oci/config'
 CONFIG_PROFILE = "DEFAULT"
 endpoint = "https://inference.generativeai.us-chicago-1.oci.oraclecloud.com"
 
