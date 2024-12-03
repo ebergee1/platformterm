@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Background -->
+  <rect width="32" height="32" rx="6" fill="#2563eb"/>
+  
+  <!-- Toolbox body -->
+  <rect x="6" y="12" width="20" height="14" rx="2" fill="white"/>
+  
+  <!-- Toolbox top -->
+  <path d="M8 8h16v4H8z" fill="white"/>
+  
+  <!-- Handle -->
+  <rect x="12" y="10" width="8" height="2" fill="#2563eb"/>
+  
+  <!-- T symbol inside -->
+  <path d="M11 16h10v2h-4v6h-2v-6h-4v-2z" fill="#2563eb"/>
+</svg>

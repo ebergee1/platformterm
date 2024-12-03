@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='toolbox-favicon.svg') }}">
+    <title>Terminology Tools Hub</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --background: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --hover-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .subtitle {
+            color: var(--text-light);
+            font-size: 1.1rem;
+        }
+
+        /* Search and Filter Section */
+        .search-filter {
+            max-width: 800px;
+            margin: 0 auto 2rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .search-bar {
+            flex-grow: 1;
+            position: relative;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-bar input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* Category Section */
+        .category-section {
+            margin-bottom: 3rem;
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e2e8f0;
+            position: relative;
+        }
+
+        .category-header::before {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100px;
+            height: 2px;
+            background-color: var(--primary);
+        }
+
+        .category-title {
+            font-size: 1.75rem;
+            color: var(--primary-dark);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+
+        .category-count {
+            background: #e0e7ff;
+            color: var(--primary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            margin-left: 1rem;
+            font-weight: 500;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.25rem;
+            padding: 0.5rem 0;
+        }
+
+        .version {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.875rem;
+            z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Modify tool cards to work better with new section styling */
+        .tool-card {
+            background: var(--background);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--hover-shadow);
+            border-color: var(--primary);
+        }
+
+        .tool-card h3 {
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            font-size: 1.25rem;
+        }
+
+        .tool-card p {
+            color: var(--text-light);
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+            flex-grow: 1;
+        }
+
+        .meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.75rem;
+            color: var(--text-light);
+        }
+
+        .badge {
+            background: #e0e7ff;
+            color: var(--primary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-weight: 500;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 4rem;
+            padding: 2rem;
+            color: var(--text-light);
+            font-size: 0.875rem;
+        }
+
+        /* Category filter buttons */
+        .category-filters {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+            justify-content: center; /* Center the filter buttons */
+        }
+
+        .category-filter {
+            background: none;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+        }
+
+        .category-filter.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .category-filter:hover {
+            background: var(--primary-dark);
+            color: white;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.querySelector('.search-bar input');
+            const toolCards = document.querySelectorAll('.tool-card');
+            const categoryFilters = document.querySelectorAll('.category-filter');
+            let activeCategory = 'all';
+
+            function filterTools() {
+                const searchTerm = searchInput.value.toLowerCase().trim();
+                
+                toolCards.forEach(card => {
+                    const title = card.querySelector('h3').textContent.toLowerCase();
+                    const description = card.querySelector('p').textContent.toLowerCase();
+                    const category = card.querySelector('.badge').textContent.toLowerCase();
+                    
+                    const matchesSearch = !searchTerm || 
+                        title.includes(searchTerm) || 
+                        description.includes(searchTerm) ||
+                        category.includes(searchTerm);
+                    
+                    const matchesCategory = activeCategory === 'all' || 
+                        category === activeCategory.toLowerCase();
+
+                    card.style.display = (matchesSearch && matchesCategory) ? 'flex' : 'none';
+                });
+
+                // Update category counts
+                updateCategoryCounts();
+            }
+
+            function updateCategoryCounts() {
+                document.querySelectorAll('.category-section').forEach(section => {
+                    const visibleCards = section.querySelectorAll('.tool-card[style="display: flex"]').length;
+                    const countElement = section.querySelector('.category-count');
+                    if (countElement) {
+                        countElement.textContent = `${visibleCards} tools`;
+                    }
+                });
+            }
+
+            searchInput.addEventListener('input', filterTools);
+
+            categoryFilters.forEach(filter => {
+                filter.addEventListener('click', function() {
+                    categoryFilters.forEach(f => f.classList.remove('active'));
+                    this.classList.add('active');
+                    activeCategory = this.dataset.category;
+                    filterTools();
+                });
+            });
+
+            // Clear search when 'Escape' is pressed
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    this.value = '';
+                    filterTools();
+                }
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Terminology Tools Hub</h1>
+            <p class="subtitle">Streamlining clinical terminology workflows</p>
+        </header>
+
+        <div class="search-filter">
+            <div class="search-bar">
+                <input type="text" placeholder="Search tools by name, description, or category...">
+            </div>
+        </div>
+
+        <div class="category-filters">
+            <button class="category-filter active" data-category="all">All Tools</button>
+            <button class="category-filter" data-category="Code Compare">Code Compare</button>
+            <button class="category-filter" data-category="AI Tools">AI Tools</button>
+            <button class="category-filter" data-category="Enhancements">Enhancements</button>
+            <button class="category-filter" data-category="Ontology">Ontology</button>
+        </div>
+
+        <div class="category-section">
+            <div class="category-header">
+                <h2 class="category-title">Code Compare Tools</h2>
+                <span class="category-count">3 tools</span>
+            </div>
+            <div class="tools-grid">
+                <a href="{{ url_for('compare_dropped_duplicates') }}" class="tool-card">
+                    <h3>Dropped and Duplicates Report</h3>
+                    <p>Generate a report of all codes dropped, duplicated, and added to concepts in any given release of a context.</p>
+                    <div class="meta">
+                        <span class="badge">Code Compare</span>
+                        <span>Runtime: ~1 minute</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('compare_grouper_check') }}" class="tool-card">
+                    <h3>Grouper Check</h3>
+                    <p>A report that summarizes codes potentially missing from groupers or added to multiple.</p>
+                    <div class="meta">
+                        <span class="badge">Code Compare</span>
+                        <span>Runtime: ~1 minute</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('snomed_spell_checker') }}" class="tool-card">
+                    <h3>Concept Name Spell Checker</h3>
+                    <p>Spell-check concept names in a context.</p>
+                    <div class="meta">
+                        <span class="badge">Code Compare</span>
+                        <span>Runtime: ~2 minutes</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div class="category-section">
+            <div class="category-header">
+                <h2 class="category-title">AI-Powered Tools</h2>
+                <span class="category-count">3 tools</span>
+            </div>
+            <div class="tools-grid">
+                <a href="{{ url_for('concept_summary') }}" class="tool-card">
+                    <h3>Concept Version Summary</h3>
+                    <p>Uses GenAI to summarize code additions, removals, and movements between concepts between different versions of a context.</p>
+                    <div class="meta">
+                        <span class="badge">AI Tools</span>
+                        <span>Runtime: Varies</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('concept_compare') }}" class="tool-card">
+                    <h3>Concept to Concept Comparison</h3>
+                    <p>Uses GenAI to compare two concepts, either within the same context or across different contexts.</p>
+                    <div class="meta">
+                        <span class="badge">AI Tools</span>
+                        <span>Runtime: ~2 minutes</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('concept_embedding_embed') }}" class="tool-card">
+                    <h3>Concept Clustering Analysis</h3>
+                    <p>Analyzes text patterns in concept codes using AI embeddings to identify related groupings. Generates interactive visualizations and detailed cluster analysis.</p>
+                    <div class="meta">
+                        <span class="badge">AI Tools</span>
+                        <span>Runtime: ~2 minutes</span>
+                    </div>
+                </a>                
+                <!--<a href="{{ url_for('measure_summary') }}" class="tool-card">
+                    <h3>CS Impact Analysis</h3>
+                    <p>Uses GenAI to summarize code changes within concepts and their impact on Clinical Standard measures.</p>
+                    <p>PLACEHOLDER</p>
+                    <div class="meta">
+                        <span class="badge">AI Tools</span>
+                        <span>Runtime: Varies</span>
+                    </div>
+                </a>-->
+            </div>
+        </div>
+
+        <div class="category-section">
+            <div class="category-header">
+                <h2 class="category-title">Enhancement Tools</h2>
+                <span class="category-count">4 tools</span>
+            </div>
+            <div class="tools-grid">
+                <a href="{{ url_for('non_exclusive_personalized') }}" class="tool-card">
+                    <h3>Non-Exclusive - Personalized</h3>
+                    <p>A non-exclusive report that contains only given concepts.</p>
+                    <div class="meta">
+                        <span class="badge">Enhancements</span>
+                        <span>Runtime: ~2 minutes</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('compare_datasets') }}" class="tool-card">
+                    <h3>Dataset Comparison</h3>
+                    <p>Identifies differences between two datasets.</p>
+                    <div class="meta">
+                        <span class="badge">Enhancements</span>
+                        <span>Runtime: Immediate</span>
+                    </div>
+                </a>
+                <div class="tools-grid">
+                    <a href="{{ url_for('personalized_code_compare') }}" class="tool-card">
+                        <h3>Code Compare - Personalized</h3>
+                        <p>A code compare that contains only given concepts and new concepts that were created from those.</p>
+                        <div class="meta">
+                            <span class="badge">Enhancements</span>
+                            <span>Runtime: ~2 minutes</span>
+                        </div>
+                    </a>
+                </div>
+                <a href="{{ url_for('find_missing_codes') }}" class="tool-card">
+                    <h3>Find Missing Codes</h3>
+                    <p>Compares pivot table values against existing concept codes to identify and report missing codes for comprehensive coverage analysis.</p>
+                    <div class="meta">
+                        <span class="badge">Enhancements</span>
+                        <span>Runtime: ~1 minute</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div class="category-section">
+            <div class="category-header">
+                <h2 class="category-title">Ontology Tools</h2>
+                <span class="category-count">1 tool</span>
+            </div>
+            <div class="tools-grid">
+                <a href="{{ url_for('alias_converter') }}" class="tool-card">
+                    <h3>Alias Converter</h3>
+                    <p>Generate concept aliases from concept names.</p>
+                    <div class="meta">
+                        <span class="badge">Ontology</span>
+                        <span>Runtime: Immediate</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+        <footer>
+            <!--<p>© 2024 Terminology Tools Hub. All rights reserved.</p>-->
+        </footer>
+    </div>
+    <div class="version">Version 4.0.1.2</div>
+</body>
+</html>
