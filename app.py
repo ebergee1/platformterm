@@ -44,6 +44,11 @@ import io
 from io import BytesIO
 import plotly.io as pio
 from datetime import datetime
+from openpyxl.utils import get_column_letter
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.formatting.rule import Rule
+from openpyxl.styles.differential import DifferentialStyle
+from openpyxl.utils import get_column_letter
 
 from config import OCI_CONFIG_PATH, OCI_CONFIG_PROFILE, GENERATIVE_AI_MODEL_ID, SERVICE_ENDPOINT, NAMESPACE, BUCKET_NAME, COMPARTMENT_NAME
 
@@ -412,7 +417,8 @@ def alias_converter():
             if not spellcheck_needed and not remaining_names:
                 # All names processed, display results
                 history.append("Converted Names:")
-                history.append("\n".join(converted_names))
+                for name in converted_names:
+                    history.append(name)
                 history.append("Converted Aliases:")
                 # Instead of joining the aliases, add them individually to history
                 for alias in converted_aliases:
@@ -584,9 +590,15 @@ def compare_dropped_duplicates():
 
 # Rename columns and run dropped/duplicates logic
 def process_dropped_duplicates(file_path):
-    # Step 1: Load the Excel file and rename columns
+    def is_value_present(value):
+        return value not in [None, '', 'nan'] and not (isinstance(value, float) and pd.isna(value))
+
+    # Load the Excel file and rename columns
     df = pd.read_excel(file_path)
     df.rename(columns={df.columns[3]: 'Old Concept Name', df.columns[6]: 'New Concept Name'}, inplace=True)
+
+    # Ensure 'Code' is treated as a string
+    df['Code'] = df['Code'].astype(str)
 
     # Output columns
     columns_to_output = ['Code System', 'Code', 'Names', 'Old Concept Name', 'New Concept Name']
@@ -594,8 +606,7 @@ def process_dropped_duplicates(file_path):
     # Function Definitions
     # Function - All Duplicates (Red, White, and Green)
     def process_all_dups(df):
-        df['Normalized_Code'] = df['Code'].astype(str).str.rstrip('.0')
-        grouped = df.groupby(['Code System', 'Normalized_Code'])
+        grouped = df.groupby(['Code System', 'Code'])
         matching_codes = []
         for (code_system, code), group in grouped:
             removed_from_concept = group['Old Concept Name'].notnull() & group['New Concept Name'].isnull()
@@ -603,90 +614,110 @@ def process_dropped_duplicates(file_path):
             remains_in_concept = group['Old Concept Name'].notnull() & group['New Concept Name'].notnull()
             if removed_from_concept.any() and added_to_concept.any() and remains_in_concept.any():
                 matching_codes.append((code_system, code))
-        matching_codes_df = df[(df[['Code System', 'Normalized_Code']].apply(tuple, axis=1).isin(matching_codes))]
-        return matching_codes_df[columns_to_output]
+        if matching_codes:
+            matching_codes_df = df[df[['Code System', 'Code']].apply(tuple, axis=1).isin(matching_codes)]
+            return matching_codes_df[columns_to_output]
+        else:
+            return pd.DataFrame(columns=columns_to_output)
 
     # Function - Green/White Duplicates
     def process_gw_dups(df):
-        df['Normalized_Code'] = df['Code'].astype(str).str.rstrip('.0')
-        removed_codes = df[df['Old Concept Name'].notnull() & df['New Concept Name'].isnull()]['Normalized_Code'].unique()
+        removed_codes = df[df['Old Concept Name'].notnull() & df['New Concept Name'].isnull()]['Code'].unique()
         initial_matches = df[df['Old Concept Name'].notnull() & df['New Concept Name'].notnull()]
         duplicates = []
-        for _, group in initial_matches.groupby(['Code System', 'Normalized_Code']):
-            initial_match_rows = group
+        for (_, code), group in initial_matches.groupby(['Code System', 'Code']):
             subsequent_rows = df[(df['Code System'] == group['Code System'].iloc[0]) &
-                                 (df['Normalized_Code'] == group['Normalized_Code'].iloc[0]) &
-                                 (df.index > initial_match_rows.index.max())]
+                                 (df['Code'] == group['Code'].iloc[0]) &
+                                 (df.index > group.index.max())]
             if (subsequent_rows['Old Concept Name'].isnull() & subsequent_rows['New Concept Name'].notnull()).any():
-                duplicates.append((group['Code System'].iloc[0], group['Normalized_Code'].iloc[0]))
+                duplicates.append((group['Code System'].iloc[0], group['Code'].iloc[0]))
         duplicates = [dup for dup in duplicates if dup[1] not in removed_codes]
-        duplicate_codes_df = df[(df[['Code System', 'Normalized_Code']].apply(tuple, axis=1).isin(duplicates))]
-        return duplicate_codes_df[duplicate_codes_df['New Concept Name'].notnull()][columns_to_output]
+        if duplicates:
+            duplicate_codes_df = df[df[['Code System', 'Code']].apply(tuple, axis=1).isin(duplicates)]
+            return duplicate_codes_df[duplicate_codes_df['New Concept Name'].notnull()][columns_to_output]
+        else:
+            return pd.DataFrame(columns=columns_to_output)
 
     # Function - Red/White Duplicates
     def process_rw_dups(df):
-        df['Code'] = df['Code'].astype(str)
         added_codes = df[df['Old Concept Name'].isnull() & df['New Concept Name'].notnull()]['Code'].unique()
-        df = df[~df['Code'].isin(added_codes)]
-        initial_matches = df[df['Old Concept Name'].notnull() & df['New Concept Name'].notnull()]
+        df_filtered = df[~df['Code'].isin(added_codes)]
+        initial_matches = df_filtered[df_filtered['Old Concept Name'].notnull() & df_filtered['New Concept Name'].notnull()]
         matching_codes = []
-        for _, group in initial_matches.groupby(['Code System', 'Code']):
-            subsequent_rows = df[(df['Code System'] == group['Code System'].iloc[0]) & (df['Code'] == group['Code'].iloc[0])]
+        for (_, code), group in initial_matches.groupby(['Code System', 'Code']):
+            subsequent_rows = df_filtered[(df_filtered['Code System'] == group['Code System'].iloc[0]) &
+                                          (df_filtered['Code'] == group['Code'].iloc[0])]
             if (subsequent_rows['Old Concept Name'].notnull() & subsequent_rows['New Concept Name'].isnull()).any():
                 matching_codes.append((group['Code System'].iloc[0], group['Code'].iloc[0]))
-        matching_codes_df = df[df[['Code System', 'Code']].apply(tuple, axis=1).isin(matching_codes)]
-        return matching_codes_df[columns_to_output]
+        if matching_codes:
+            matching_codes_df = df_filtered[df_filtered[['Code System', 'Code']].apply(tuple, axis=1).isin(matching_codes)]
+            return matching_codes_df[columns_to_output]
+        else:
+            return pd.DataFrame(columns=columns_to_output)
 
     # Function - Dropped and Added (All)
     def process_dropped_and_added_codes_all(df):
-        df['Normalized_Code'] = df['Code'].astype(str).str.rstrip('.0')
-        # Create masks for removed and added concepts
-        removed_mask = df['Old Concept Name'].notnull() & df['New Concept Name'].isnull()
-        added_mask = df['Old Concept Name'].isnull() & df['New Concept Name'].notnull()
-        # Group by 'Code System' and 'Normalized_Code'
-        grouped = df.groupby(['Code System', 'Normalized_Code'])
-        # Identify groups where both conditions are True
-        matching_codes = grouped.filter(
-            lambda g: removed_mask[g.index].any() and added_mask[g.index].any()
-        )[['Code System', 'Normalized_Code']].drop_duplicates()
-        matching_codes_df = df.merge(matching_codes, on=['Code System', 'Normalized_Code'])
-        return matching_codes_df[columns_to_output]
+        grouped = df.groupby(['Code System', 'Code'])
+        
+        # Define the conditions for red, green, and white duplicates
+        def filter_condition(g):
+            has_red = (g['Old Concept Name'].notnull() & g['New Concept Name'].isnull()).any()
+            has_green = (g['Old Concept Name'].isnull() & g['New Concept Name'].notnull()).any()
+            has_white = (g['Old Concept Name'].notnull() & g['New Concept Name'].notnull()).any()
+            return has_red and has_green and not has_white
 
+        # Apply the filter condition
+        matching_codes = grouped.filter(filter_condition)[["Code System", "Code"]].drop_duplicates()
+        
+        if not matching_codes.empty:
+            matching_codes_df = df.merge(matching_codes, on=['Code System', 'Code'])
+            return matching_codes_df[columns_to_output]
+        else:
+            return pd.DataFrame(columns=columns_to_output)
 
     # Function - Dropped and Added (Strict)
     def process_dropped_and_added_codes_strict(df):
-        df['Normalized_Code'] = df['Code'].astype(str).str.rstrip('.0')
-        # Group by 'Code System' and 'Normalized_Code'
-        grouped = df.groupby(['Code System', 'Normalized_Code'])
-        # Identify matching codes based on the number of unique old and new concepts
-        matching_codes = grouped.filter(
-            lambda g: (
-                ((g['Old Concept Name'].notnull() & g['New Concept Name'].isnull()).sum() > 1 and
-                (g['Old Concept Name'].isnull() & g['New Concept Name'].notnull()).sum() > 1) or
-                ((g['Old Concept Name'].notnull() & g['New Concept Name'].isnull()).sum() == 1 and
-                (g['Old Concept Name'].isnull() & g['New Concept Name'].notnull()).sum() > 1) or
-                ((g['Old Concept Name'].notnull() & g['New Concept Name'].isnull()).sum() > 1 and
-                (g['Old Concept Name'].isnull() & g['New Concept Name'].notnull()).sum() == 1)
-            )
-        )[['Code System', 'Normalized_Code']].drop_duplicates()
-        matching_codes_df = df.merge(matching_codes, on=['Code System', 'Normalized_Code'])
-        return matching_codes_df[columns_to_output]
+        grouped = df.groupby(['Code System', 'Code'])
+        matching_codes = []
+        
+        for (code_system, code), group in grouped:
+            removed_count = (group['Old Concept Name'].notnull() & group['New Concept Name'].isnull()).sum()
+            added_count = (group['Old Concept Name'].isnull() & group['New Concept Name'].notnull()).sum()
+            has_white = (group['Old Concept Name'].notnull() & group['New Concept Name'].notnull()).any()
+            
+            # Define the condition to include the code only if:
+            # - It has at least one red and one green duplicate
+            # - It does NOT have any white duplicates
+            if (removed_count >= 1 and added_count >= 1) and not has_white:
+                # Additional strict conditions on counts can be applied here if needed
+                matching_codes.append((code_system, code))
+        
+        if matching_codes:
+            matching_codes_df = df[df[['Code System', 'Code']].apply(tuple, axis=1).isin(matching_codes)]
+            return matching_codes_df[columns_to_output]
+        else:
+            return pd.DataFrame(columns=columns_to_output)
 
     # Function - Dropped
     def process_dropped_codes(df):
-        df['Code'] = df['Code'].astype(str)
         removed_not_added = df.groupby('Code').filter(
             lambda x: x['Old Concept Name'].notnull().any() and x['New Concept Name'].notnull().sum() == 0
         )['Code'].unique()
-        removed_not_added_df = df[df['Code'].isin(removed_not_added)]
-        columns_to_output_dropped = ['Code System', 'Code', 'Names', 'Old Concept Name']
-        return removed_not_added_df[columns_to_output_dropped]
+        if removed_not_added.size > 0:
+            removed_not_added_df = df[df['Code'].isin(removed_not_added)]
+            columns_to_output_dropped = ['Code System', 'Code', 'Names', 'Old Concept Name']
+            return removed_not_added_df[columns_to_output_dropped]
+        else:
+            return pd.DataFrame(columns=['Code System', 'Code', 'Names', 'Old Concept Name'])
 
     # Function - Code Additions
     def process_code_additions(df):
         added_codes_df = df[df['Old Concept Name'].isnull() & df['New Concept Name'].notnull()]
-        columns_to_output_additions = ['Code System', 'Code', 'Names', 'New Concept Name']
-        return added_codes_df[columns_to_output_additions]
+        if not added_codes_df.empty:
+            columns_to_output_additions = ['Code System', 'Code', 'Names', 'New Concept Name']
+            return added_codes_df[columns_to_output_additions]
+        else:
+            return pd.DataFrame(columns=['Code System', 'Code', 'Names', 'New Concept Name'])
 
     # Run the processing functions
     all_dups_df = process_all_dups(df)
@@ -707,61 +738,66 @@ def process_dropped_duplicates(file_path):
     green_font = Font(color='006100')
 
     # =========================
-    # New code starts here
+    # Update Original Sheet
     # =========================
 
     # Access the original sheet (assuming it's the first sheet)
     ws_original = wb.worksheets[0]
 
+    # Update the headers in the original sheet
+    ws_original.cell(row=1, column=4, value='Old Concept Name')
+    ws_original.cell(row=1, column=7, value='New Concept Name')
+
+    # Get the maximum row and column
+    max_row = ws_original.max_row
+    max_col = ws_original.max_column
+
     # Process each row starting from the second row (to skip headers)
-    for row in ws_original.iter_rows(min_row=2, max_row=ws_original.max_row):
-        # Adjust the column indices based on zero-based indexing
+    for row in ws_original.iter_rows(min_row=2, max_row=max_row, min_col=1, max_col=max_col):
         old_concept = row[3].value  # Column D (index 3)
         new_concept = row[6].value  # Column G (index 6)
 
         # Apply styling based on the conditions
-        if old_concept and not new_concept:
+        if is_value_present(old_concept) and not is_value_present(new_concept):
             # Only "Old Concept Name" has a value
             for cell in row:
                 cell.font = red_font
                 cell.fill = red_fill
-        elif new_concept and not old_concept:
+        elif is_value_present(new_concept) and not is_value_present(old_concept):
             # Only "New Concept Name" has a value
             for cell in row:
                 cell.font = green_font
                 cell.fill = green_fill
-        elif old_concept and new_concept:
-            # Both have values; keep default styling
-            pass
-        else:
-            # Neither have values; optional handling
-            pass
+        # No action needed if both or neither have values
 
-    # Create Dropped sheet
+    # =========================
+    # Create Dropped Sheet
+    # =========================
+
     if "Dropped" in wb.sheetnames:
         wb.remove(wb["Dropped"])
     ws_dropped = wb.create_sheet("Dropped", 1)
 
-    # Dropped codes data and styles
+    # Write Dropped codes data and apply styles
     for col, column_name in enumerate(dropped_codes_df.columns, start=1):
         ws_dropped.cell(row=1, column=col, value=column_name)
         ws_dropped.cell(row=1, column=col).font = Font(bold=True)
     for row_idx, data_row in enumerate(dropped_codes_df.itertuples(index=False), start=2):
         for col_idx, value in enumerate(data_row, start=1):
             ws_dropped.cell(row=row_idx, column=col_idx, value=value)
-    red_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
-    red_font = Font(color='9C0006')
-    for row in ws_dropped.iter_rows(min_row=2, max_row=ws_dropped.max_row, min_col=1, max_col=ws_dropped.max_column):
-        old_concept = row[3].value
-        if old_concept:
-            for cell in row:
+        if is_value_present(data_row[3]):  # 'Old Concept Name' is not None or NaN
+            for col_idx in range(1, 5):  # Columns A-D
+                cell = ws_dropped.cell(row=row_idx, column=col_idx)
                 cell.fill = red_fill
                 cell.font = red_font
 
-    # Create Duplicates sheet
+    # =========================
+    # Create Duplicates Sheet
+    # =========================
+
     if "Duplicates" in wb.sheetnames:
         wb.remove(wb["Duplicates"])
-    ws = wb.create_sheet("Duplicates")
+    ws_duplicates = wb.create_sheet("Duplicates", 3)  # Use a distinct variable name
 
     # Write data for Duplicates sheet with headers
     def write_data_with_header(ws, start_row, header, data):
@@ -769,51 +805,57 @@ def process_dropped_duplicates(file_path):
         ws.cell(row=start_row, column=1).font = Font(bold=True)
         ws.cell(row=start_row, column=1).alignment = Alignment(horizontal='center')
         ws.merge_cells(start_row=start_row, start_column=1, end_row=start_row, end_column=len(columns_to_output))
-        
+
         for col, column_name in enumerate(columns_to_output, start=1):
             ws.cell(row=start_row + 1, column=col, value=column_name)
             ws.cell(row=start_row + 1, column=col).font = Font(bold=True)
-        
-        for row_idx, data_row in enumerate(data.itertuples(index=False), start=start_row + 2):
-            for col_idx, value in enumerate(data_row, start=1):
-                ws.cell(row=row_idx, column=col_idx, value=value)
-        
-        return start_row + data.shape[0] + 3 
+
+        if not data.empty:
+            for row_idx, data_row in enumerate(data.itertuples(index=False), start=start_row + 2):
+                for col_idx, value in enumerate(data_row, start=1):
+                    ws.cell(row=row_idx, column=col_idx, value=value)
+            return start_row + data.shape[0] + 3
+        else:
+            # If data is empty, return start_row + 2 to skip header and add a blank line
+            return start_row + 2
 
     # Duplicates sheet data and styles
     next_row = 1
-    next_row = write_data_with_header(ws, next_row, "Green, White, and Red Duplicates", all_dups_df)
-    next_row = write_data_with_header(ws, next_row, "Green and White Duplicates", gw_dups_df)
-    next_row = write_data_with_header(ws, next_row, "Red and White Duplicates", rw_dups_df)
-    next_row = write_data_with_header(ws, next_row, "Codes Dropped from and Added to Multiple Concepts (Strict Conditions)", dropped_and_added_strict_df)
-    next_row = write_data_with_header(ws, next_row, "Codes Dropped from One or More Concepts and Added to One or More Concepts (All Cases)", dropped_and_added_all_df)
+    sections = [
+        ("Green, White, and Red Duplicates", all_dups_df),
+        ("Green and White Duplicates", gw_dups_df),
+        ("Red and White Duplicates", rw_dups_df),
+        ("Codes Dropped from and Added to Multiple Concepts (Strict Conditions)", dropped_and_added_strict_df),
+        ("Codes Dropped from One or More Concepts and Added to One or More Concepts (All Cases)", dropped_and_added_all_df),
+    ]
 
-    green_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
-    green_font = Font(color='006100')
-
-    # Dictionary to store the rows for each unique code
     code_system_rows = {}
 
-    for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=ws.max_column):
-        code_system = row[0].value  # Column A
-        code = row[1].value  # Column B
-        old_concept = row[3].value
-        new_concept = row[4].value
-        
-        if isinstance(old_concept, str) and not isinstance(new_concept, str):
-            for cell in row:
-                cell.fill = red_fill
-                cell.font = red_font
-        elif not isinstance(old_concept, str) and isinstance(new_concept, str):
-            for cell in row:
-                cell.fill = green_fill
-                cell.font = green_font
-        
-        # Store the row number for each unique code and code system combination
-        key = (code_system, code)
-        if key not in code_system_rows:
-            code_system_rows[key] = []
-        code_system_rows[key].append(row[0].row)
+    for header, data in sections:
+        start_row = next_row
+        next_row = write_data_with_header(ws_duplicates, next_row, header, data)  # Use ws_duplicates
+        if not data.empty:
+            # Apply styling and collect rows for bordering
+            for row in ws_duplicates.iter_rows(min_row=start_row + 2, max_row=next_row - 2, min_col=1, max_col=len(columns_to_output)):
+                code_system = row[0].value  # Column A
+                code = row[1].value  # Column B
+                old_concept = row[3].value  # Column D
+                new_concept = row[4].value  # Column E
+
+                if is_value_present(old_concept) and not is_value_present(new_concept):
+                    for cell in row:
+                        cell.font = red_font
+                        cell.fill = red_fill
+                elif is_value_present(new_concept) and not is_value_present(old_concept):
+                    for cell in row:
+                        cell.font = green_font
+                        cell.fill = green_fill
+
+                # Store the row number for each unique code and code system combination
+                key = (code_system, code)
+                if key not in code_system_rows:
+                    code_system_rows[key] = []
+                code_system_rows[key].append(row[0].row)
 
     # Add borders to the outer edges of each set of codes
     medium_side = Side(style='medium')
@@ -822,39 +864,80 @@ def process_dropped_duplicates(file_path):
         if len(rows) > 1:  # Only add borders if there's more than one row with the same code and code system
             min_row = min(rows)
             max_row = max(rows)
-            
-            # Apply top border
-            for cell in ws[min_row]:
-                cell.border = cell.border + Border(top=medium_side)
-            
-            # Apply bottom border
-            for cell in ws[max_row]:
-                cell.border = cell.border + Border(bottom=medium_side)
-            
-            # Apply left and right borders
-            for row_idx in range(min_row, max_row + 1):
-                ws.cell(row=row_idx, column=1).border = ws.cell(row=row_idx, column=1).border + Border(left=medium_side)
-                ws.cell(row=row_idx, column=ws.max_column).border = ws.cell(row=row_idx, column=ws.max_column).border + Border(right=medium_side)
 
-    # Create Code Additions sheet and styles
+            # Apply top border
+            for cell in ws_duplicates[min_row]:
+                existing_border = cell.border
+                cell.border = Border(
+                    left=existing_border.left,
+                    right=existing_border.right,
+                    top=medium_side,
+                    bottom=existing_border.bottom
+                )
+
+            # Apply bottom border
+            for cell in ws_duplicates[max_row]:
+                existing_border = cell.border
+                cell.border = Border(
+                    left=existing_border.left,
+                    right=existing_border.right,
+                    top=existing_border.top,
+                    bottom=medium_side
+                )
+
+            # Apply left and right borders to all columns A to E (columns with data)
+            for row_idx in rows:
+                for col_idx in range(1, len(columns_to_output) + 1):
+                    cell = ws_duplicates.cell(row=row_idx, column=col_idx)
+                    existing_border = cell.border
+                    if col_idx == 1:
+                        # Left border
+                        cell.border = Border(
+                            left=medium_side,
+                            right=existing_border.right,
+                            top=existing_border.top,
+                            bottom=existing_border.bottom
+                        )
+                    elif col_idx == len(columns_to_output):
+                        # Right border
+                        cell.border = Border(
+                            left=existing_border.left,
+                            right=medium_side,
+                            top=existing_border.top,
+                            bottom=existing_border.bottom
+                        )
+                    else:
+                        cell.border = Border(
+                            left=existing_border.left,
+                            right=existing_border.right,
+                            top=existing_border.top,
+                            bottom=existing_border.bottom
+                        )
+
+    # =========================
+    # Create Additions Sheet
+    # =========================
+
     if "Additions" in wb.sheetnames:
         wb.remove(wb["Additions"])
-    ws_added = wb.create_sheet("Additions", 2)
+    ws_additions = wb.create_sheet("Additions", 2)  # Use a distinct variable name
+
+    # Write data to Additions sheet
     for col, column_name in enumerate(code_additions_df.columns, start=1):
-        ws_added.cell(row=1, column=col, value=column_name)
-        ws_added.cell(row=1, column=col).font = Font(bold=True)
+        ws_additions.cell(row=1, column=col, value=column_name)
+        ws_additions.cell(row=1, column=col).font = Font(bold=True)
     for row_idx, data_row in enumerate(code_additions_df.itertuples(index=False), start=2):
         for col_idx, value in enumerate(data_row, start=1):
-            ws_added.cell(row=row_idx, column=col_idx, value=value)
-
-    for row in ws_added.iter_rows(min_row=2, max_row=ws_added.max_row, min_col=1, max_col=ws_added.max_column):
-        for cell in row:
-            cell.fill = green_fill
-            cell.font = green_font
+            ws_additions.cell(row=row_idx, column=col_idx, value=value)
+        if is_value_present(data_row[3]):  # 'New Concept Name' is not None or NaN
+            for col_idx in range(1, 5):  # Columns A-D
+                cell = ws_additions.cell(row=row_idx, column=col_idx)
+                cell.fill = green_fill
+                cell.font = green_font
 
     # Save the workbook to the processed files folder
     output_file_name = 'processed_' + os.path.basename(file_path)
-    output_file_path = os.path.join(app.config['PROCESSED_FOLDER'], output_file_name)
+    output_file_path = os.path.join(os.path.dirname(file_path), output_file_name)
     wb.save(output_file_path)
 
     return output_file_path
